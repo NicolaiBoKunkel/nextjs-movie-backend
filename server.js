@@ -86,6 +86,22 @@ app.get('/api/movies/:id/trailer', async (req, res) => {
     }
   });
   
+  //search
+  app.get('/api/search', async (req, res) => {
+    const query = req.query.q;
+    if (!query) return res.status(400).json({ error: "Missing search query" });
+  
+    try {
+      const response = await fetch(
+        `https://api.themoviedb.org/3/search/multi?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=1`
+      );
+      const data = await response.json();
+      res.json(data.results);
+    } catch (err) {
+      res.status(500).json({ error: "Failed to fetch search results" });
+    }
+  });
+  
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
