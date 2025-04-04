@@ -189,7 +189,46 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
   }
 });
 
-  
+
+app.post('/api/users/favorites', authenticateToken, async (req, res) => {
+  const { mediaId } = req.body;
+  if (!mediaId) return res.status(400).json({ message: "Missing media ID" });
+
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user.favorites.includes(mediaId)) {
+      user.favorites.push(mediaId);
+      await user.save();
+    }
+    res.json({ message: "Added to favorites", favorites: user.favorites });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to add favorite" });
+  }
+});
+
+
+app.delete('/api/users/favorites/:mediaId', authenticateToken, async (req, res) => {
+  const mediaId = parseInt(req.params.mediaId);
+  try {
+    const user = await User.findById(req.user.id);
+    user.favorites = user.favorites.filter((id) => id !== mediaId);
+    await user.save();
+    res.json({ message: "Removed from favorites", favorites: user.favorites });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to remove favorite" });
+  }
+});
+
+
+app.get('/api/users/favorites', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    res.json({ favorites: user.favorites });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to get favorites" });
+  }
+});
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
