@@ -1,6 +1,11 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import mongoose from "mongoose";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import User from "./models/User.js"; // You'll need to create this model
+
 
 dotenv.config();
 const app = express();
@@ -101,6 +106,89 @@ app.get('/api/movies/:id/trailer', async (req, res) => {
       res.status(500).json({ error: "Failed to fetch search results" });
     }
   });
+
+
+  mongoose.connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+  }).then(() => {
+    console.log("Connected to MongoDB");
+  }).catch((err) => {
+    console.error("MongoDB connection error:", err);
+  });
+
+
+  const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers.authorization; // expected: "Bearer <token>"
+    const token = authHeader && authHeader.split(" ")[1];
+  
+    if (!token) return res.status(401).json({ message: "No token provided" });
+  
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+      if (err) return res.status(403).json({ message: "Invalid token" });
+      req.user = user; // { id, username }
+      next();
+    });
+  };
+  
+
+
+  // REGISTER
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+
+    const existing = await User.findOne({ email });
+    if (existing) return res.status(400).json({ message: "Email already registered" });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = new User({ username, email, password: hashedPassword });
+    await user.save();
+
+    res.status(201).json({ message: "User registered successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Registration failed" });
+  }
+});
+
+// LOGIN
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ message: "Invalid credentials" });
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) return res.status(400).json({ message: "Invalid credentials" });
+
+    const token = jwt.sign(
+      { id: user._id, username: user.username },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    res.json({ token, username: user.username });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Login failed" });
+  }
+});
+
+// User info
+app.get('/api/auth/me', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password"); // exclude password
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to get user info" });
+  }
+});
+
   
 
 const PORT = process.env.PORT || 5000;
