@@ -4,7 +4,7 @@ import cors from 'cors';
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import User from "./models/User.js"; // You'll need to create this model
+import User from "./models/User.js"; 
 
 
 dotenv.config();
@@ -191,15 +191,20 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
 
 
 app.post('/api/users/favorites', authenticateToken, async (req, res) => {
-  const { mediaId } = req.body;
-  if (!mediaId) return res.status(400).json({ message: "Missing media ID" });
+  const { mediaId, mediaType } = req.body;
+  if (!mediaId || !mediaType) {
+    return res.status(400).json({ message: "Missing media ID or type" });
+  }
 
   try {
     const user = await User.findById(req.user.id);
-    if (!user.favorites.includes(mediaId)) {
-      user.favorites.push(mediaId);
+    const exists = user.favorites.some(fav => fav.mediaId === mediaId && fav.mediaType === mediaType);
+
+    if (!exists) {
+      user.favorites.push({ mediaId, mediaType });
       await user.save();
     }
+
     res.json({ message: "Added to favorites", favorites: user.favorites });
   } catch (err) {
     res.status(500).json({ error: "Failed to add favorite" });
@@ -207,17 +212,22 @@ app.post('/api/users/favorites', authenticateToken, async (req, res) => {
 });
 
 
-app.delete('/api/users/favorites/:mediaId', authenticateToken, async (req, res) => {
-  const mediaId = parseInt(req.params.mediaId);
+app.delete('/api/users/favorites/:mediaId/:mediaType', authenticateToken, async (req, res) => {
+  const { mediaId, mediaType } = req.params;
+
   try {
     const user = await User.findById(req.user.id);
-    user.favorites = user.favorites.filter((id) => id !== mediaId);
+    user.favorites = user.favorites.filter(
+      fav => !(fav.mediaId === parseInt(mediaId) && fav.mediaType === mediaType)
+    );
     await user.save();
+
     res.json({ message: "Removed from favorites", favorites: user.favorites });
   } catch (err) {
     res.status(500).json({ error: "Failed to remove favorite" });
   }
 });
+
 
 
 app.get('/api/users/favorites', authenticateToken, async (req, res) => {
