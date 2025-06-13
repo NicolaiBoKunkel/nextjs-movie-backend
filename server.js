@@ -41,6 +41,11 @@ app.get('/api/tv/popular', (req, res) => {
   tmdbFetcher('/tv/popular', res);
 });
 
+// Top rated Tv shows
+app.get('/api/tv/top-rated', (req, res) => {
+  tmdbFetcher('/tv/top_rated', res);
+});
+
 
 // for trailers
 app.get('/api/movies/:id/trailer', async (req, res) => {
