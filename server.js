@@ -54,6 +54,10 @@ app.get('/api/tv/top-rated', (req, res) => {
   tmdbFetcher('/tv/top_rated', req, res);
 });
 
+// Popular people
+app.get('/api/people/popular', (req, res) => {
+  tmdbFetcher('/person/popular', req, res);
+});
 
 // for trailers
 app.get('/api/movies/:id/trailer', async (req, res) => {
@@ -118,6 +122,42 @@ app.get('/api/movies/:id/trailer', async (req, res) => {
     } catch (err) {
       res.status(500).json({ error: "Failed to fetch search results" });
     }
+  });
+
+
+  // Person details
+  app.get('/api/people/:id/details', async (req, res) => {
+    const { id } = req.params;
+    try {
+      const response = await fetch(`${TMDB_BASE_URL}/person/${id}?api_key=${API_KEY}&language=en-US`);
+      const data = await response.json();
+      res.json(data);
+    } catch {
+      res.status(500).json({ error: "Failed to fetch person details" });
+    }
+  });
+
+  // Person credits
+  app.get('/api/people/:id/credits', async (req, res) => {
+    const { id } = req.params;
+    try {
+      const response = await fetch(`${TMDB_BASE_URL}/person/${id}/combined_credits?api_key=${API_KEY}&language=en-US`);
+      const data = await response.json();
+      res.json(data.cast || []);
+    } catch {
+      res.status(500).json({ error: "Failed to fetch person credits" });
+    }
+  });
+
+  // Movie credits (cast and crew)
+  app.get('/api/movies/:id/credits', (req, res) => {
+    tmdbFetcher(`/movie/${req.params.id}/credits`, req, res);
+  });
+
+
+    // For TV show credits
+  app.get('/api/tv/:id/credits', (req, res) => {
+    tmdbFetcher(`/tv/${req.params.id}/credits`, req, res);
   });
 
 
