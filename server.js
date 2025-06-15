@@ -15,35 +15,43 @@ app.use(express.json());
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const API_KEY = process.env.TMDB_API_KEY;
 
-// Reusable function to fetch from TMDb
-const tmdbFetcher = async (endpoint, res) => {
+// function to fetch from TMDb
+const tmdbFetcher = async (endpoint, req, res) => {
+  const page = req.query.page || 1;
+  console.log(`Fetching ${endpoint} — page ${page}`);
+
   try {
-    const response = await fetch(`${TMDB_BASE_URL}${endpoint}?api_key=${API_KEY}&language=en-US&page=1`);
+    const response = await fetch(
+      `${TMDB_BASE_URL}${endpoint}?api_key=${API_KEY}&language=en-US&page=${page}`
+    );
     const data = await response.json();
-    res.json(data.results);
+    res.json(data); 
   } catch (err) {
+    console.error("TMDb fetch error:", err);
     res.status(500).json({ error: 'Failed to fetch data from TMDb' });
   }
 };
 
+
+
 // Popular movies
 app.get('/api/movies/popular', (req, res) => {
-  tmdbFetcher('/movie/popular', res);
+  tmdbFetcher('/movie/popular', req, res);
 });
 
 // Top rated movies
 app.get('/api/movies/top-rated', (req, res) => {
-  tmdbFetcher('/movie/top_rated', res);
+  tmdbFetcher('/movie/top_rated', req, res);
 });
 
 // Popular TV shows
 app.get('/api/tv/popular', (req, res) => {
-  tmdbFetcher('/tv/popular', res);
+  tmdbFetcher('/tv/popular', req, res);
 });
 
 // Top rated Tv shows
 app.get('/api/tv/top-rated', (req, res) => {
-  tmdbFetcher('/tv/top_rated', res);
+  tmdbFetcher('/tv/top_rated', req, res);
 });
 
 
