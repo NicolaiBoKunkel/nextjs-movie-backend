@@ -206,8 +206,6 @@ app.get('/api/users/favorites', authenticateToken, async (req, res) => {
 });
 
 
-let mongoServer; // declared at top
-
 async function connectToDatabase() {
   if (process.env.NODE_ENV === 'test') {
     mongoServer = await MongoMemoryServer.create();

@@ -9,7 +9,7 @@ const testUsername = 'jestuser';
 let token = '';
 
 beforeAll(async () => {
-  await connectToDatabase(); // Just connect — do NOT call app.listen()
+  await connectToDatabase();
 });
 
 afterAll(async () => {
@@ -17,20 +17,14 @@ afterAll(async () => {
   await mongoose.connection.close();
 
   const mongoServer = getMongoServer();
-  if (mongoServer) {
-    await mongoServer.stop();
-  }
+  if (mongoServer) await mongoServer.stop();
 });
 
 describe('Auth Routes', () => {
   it('should register a new user', async () => {
     const res = await request(app)
       .post('/api/auth/register')
-      .send({
-        username: testUsername,
-        email: testEmail,
-        password: testPassword,
-      });
+      .send({ username: testUsername, email: testEmail, password: testPassword });
 
     expect(res.statusCode).toBe(201);
     expect(res.body.message).toMatch(/registered/i);
@@ -39,10 +33,7 @@ describe('Auth Routes', () => {
   it('should log in the user and return a token', async () => {
     const res = await request(app)
       .post('/api/auth/login')
-      .send({
-        email: testEmail,
-        password: testPassword,
-      });
+      .send({ email: testEmail, password: testPassword });
 
     expect(res.statusCode).toBe(200);
     expect(res.body.token).toBeDefined();
