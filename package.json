@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "test": "jest",
+    "test": "cross-env NODE_ENV=test jest",
     "start": "node server.js"
   },
   "keywords": [],
@@ -19,7 +19,9 @@
     "mongoose": "^8.13.2"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "jest": "^30.0.0",
+    "mongodb-memory-server": "^10.1.4",
     "supertest": "^7.1.1"
   }
 }

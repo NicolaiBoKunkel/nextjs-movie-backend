@@ -24,9 +24,11 @@ jobs:
 
       - name: Set environment variables from secrets
         run: |
-          echo "MONGODB_URI=${{ secrets.MONGODB_URI }}" >> $GITHUB_ENV
           echo "TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}" >> $GITHUB_ENV
           echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> $GITHUB_ENV
+        # MONGODB_URI is not needed for in-memory testing
 
-      - name: Run tests
+      - name: Run tests with in-memory MongoDB
         run: npm test
+        env:
+          NODE_ENV: test
