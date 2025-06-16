@@ -6,6 +6,8 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("./models/User.js");
 const { MongoMemoryServer } = require('mongodb-memory-server');
+const Rating = require("./models/Rating.js");
+const Comment = require("./models/Comment.js");
 
 dotenv.config();
 const app = express();
@@ -164,7 +166,11 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
-    res.json(user);
+    res.json({
+      id: user._id,
+      username: user.username,
+      email: user.email
+    });
   } catch (err) {
     res.status(500).json({ error: "Failed to get user info" });
   }
@@ -202,6 +208,107 @@ app.get('/api/users/favorites', authenticateToken, async (req, res) => {
     res.json({ favorites: user.favorites });
   } catch (err) {
     res.status(500).json({ error: "Failed to get favorites" });
+  }
+});
+
+//POST OR UPDATE RATING
+app.post('/api/ratings', authenticateToken, async (req, res) => {
+  const { mediaId, mediaType, rating } = req.body;
+  if (!mediaId || !mediaType || !rating) return res.status(400).json({ message: "Missing rating data" });
+
+  try {
+    const existing = await Rating.findOne({ userId: req.user.id, mediaId, mediaType });
+    if (existing) {
+      existing.rating = rating;
+      await existing.save();
+      return res.json({ message: "Rating updated" });
+    }
+
+    const newRating = new Rating({ userId: req.user.id, mediaId, mediaType, rating });
+    await newRating.save();
+    res.status(201).json({ message: "Rating added" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to add/update rating" });
+  }
+});
+
+//GET RATING
+app.get('/api/ratings/:mediaType/:mediaId', async (req, res) => {
+  const { mediaId, mediaType } = req.params;
+  try {
+    const ratings = await Rating.find({ mediaId, mediaType });
+    const count = ratings.length;
+    const average = count ? (ratings.reduce((sum, r) => sum + r.rating, 0) / count).toFixed(1) : null;
+    res.json({ average: Number(average), count });
+  } catch {
+    res.status(500).json({ error: "Failed to get ratings" });
+  }
+});
+
+//POST COMMENT
+app.post('/api/comments', authenticateToken, async (req, res) => {
+  const { mediaId, mediaType, text } = req.body;
+  if (!mediaId || !mediaType || !text) return res.status(400).json({ message: "Missing comment data" });
+
+  try {
+    const newComment = new Comment({
+      userId: req.user.id,
+      username: req.user.username,
+      mediaId,
+      mediaType,
+      text
+    });
+    await newComment.save();
+    res.status(201).json({ message: "Comment added", comment: newComment });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to add comment" });
+  }
+});
+
+//GET COMMENTS
+app.get('/api/comments/:mediaType/:mediaId', async (req, res) => {
+  const { mediaId, mediaType } = req.params;
+  try {
+    const comments = await Comment.find({ mediaId, mediaType })
+      .sort({ createdAt: -1 })
+      .select('username text createdAt userId');
+    res.json(comments);
+  } catch {
+    res.status(500).json({ error: "Failed to fetch comments" });
+  }
+});
+
+//DELETE MEDIA ITEM
+app.delete('/api/ratings/:mediaType/:mediaId', authenticateToken, async (req, res) => {
+  const { mediaId, mediaType } = req.params;
+  try {
+    const deleted = await Rating.findOneAndDelete({
+      userId: req.user.id,
+      mediaId,
+      mediaType
+    });
+    if (!deleted) return res.status(404).json({ message: "Rating not found" });
+    res.json({ message: "Rating removed" });
+  } catch {
+    res.status(500).json({ error: "Failed to remove rating" });
+  }
+});
+
+// DELETE comment
+app.delete('/api/comments/:commentId', authenticateToken, async (req, res) => {
+  const { commentId } = req.params;
+  try {
+    const comment = await Comment.findById(commentId);
+    if (!comment) return res.status(404).json({ message: "Comment not found" });
+    if (comment.userId.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Unauthorized to delete this comment" });
+    }
+
+    await Comment.findByIdAndDelete(commentId);
+    res.json({ message: "Comment deleted" });
+  } catch (err) {
+    console.error("Error deleting comment:", err);
+    res.status(500).json({ error: "Failed to delete comment" });
   }
 });
 
