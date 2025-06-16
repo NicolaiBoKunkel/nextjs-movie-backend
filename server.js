@@ -1,10 +1,10 @@
-import express from 'express';
-import dotenv from 'dotenv';
-import cors from 'cors';
-import mongoose from "mongoose";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import User from "./models/User.js"; 
+const express = require('express');
+const dotenv = require('dotenv');
+const cors = require('cors');
+const mongoose = require("mongoose");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const User = require("./models/User.js");
 
 
 dotenv.config();
@@ -161,14 +161,14 @@ app.get('/api/movies/:id/trailer', async (req, res) => {
   });
 
 
-  mongoose.connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-  }).then(() => {
+  mongoose.connect(process.env.MONGODB_URI)
+  .then(() => {
     console.log("Connected to MongoDB");
-  }).catch((err) => {
+  })
+  .catch((err) => {
     console.error("MongoDB connection error:", err);
-  });
+  }); 
+
 
 
   const authenticateToken = (req, res, next) => {
@@ -294,4 +294,8 @@ app.get('/api/users/favorites', authenticateToken, async (req, res) => {
 
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
+
+module.exports = app;
