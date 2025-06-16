@@ -22,8 +22,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Set environment variables from secrets
+        run: |
+          echo "MONGODB_URI=${{ secrets.MONGODB_URI }}" >> $GITHUB_ENV
+          echo "TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}" >> $GITHUB_ENV
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> $GITHUB_ENV
+
       - name: Run tests
         run: npm test
-
-      - name: Lint (optional)
-        run: npm run lint || echo "No linter defined"
