@@ -211,6 +211,26 @@ app.get('/api/users/favorites', authenticateToken, async (req, res) => {
   }
 });
 
+
+//delete user account
+app.delete('/api/users/delete', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Delete user
+    await User.findByIdAndDelete(userId);
+
+    // Optionally, delete related ratings and comments
+    await Rating.deleteMany({ userId });
+    await Comment.deleteMany({ userId });
+
+    res.json({ message: 'Account deleted successfully' });
+  } catch (err) {
+    console.error("Error deleting account:", err);
+    res.status(500).json({ error: "Failed to delete account" });
+  }
+});
+
 //POST OR UPDATE RATING
 app.post('/api/ratings', authenticateToken, async (req, res) => {
   const { mediaId, mediaType, rating } = req.body;
